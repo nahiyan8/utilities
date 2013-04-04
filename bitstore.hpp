@@ -26,7 +26,7 @@ class bitstore
 
         // Allocation and Deallocation
         void alloc  ( uint64_t bits, bool value );
-        void dealloc( uint64_t bits );
+//        void dealloc( uint64_t bits );
 
         // Single-bit Access and Modification
         bool get( register uint64_t slot );

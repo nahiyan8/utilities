@@ -18,7 +18,7 @@ void bitstore::alloc( uint64_t bits, bool value )
     size = newSize;
 }
 
-// Deallocation.
+/* Deallocation, I was new, I didn't know how it worked :P
 void bitstore::dealloc( uint64_t bits )
 {
     uint64_t bytes = (bits >> 3) + ((bits & 7) != 0 ? 1 : 0), newSize = size - bytes;
@@ -28,6 +28,7 @@ void bitstore::dealloc( uint64_t bits )
 
     size = newSize;
 }
+*/
 
 /* Single-bit Access and Modification */
 bool bitstore::get( register uint64_t slot )
