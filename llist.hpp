@@ -2,26 +2,28 @@
 #define LLIST_HPP_INCLUDED
 
 /****************************************************************\
+* @note : A sentinel node is used, which uses a special struct.
 *
-*   @note : A setinel node is used, which uses a special struct.
-*
-*   @note : *pTemp1 is used to traverse the list, while *pTemp2
+* @note : *pTemp1 is used to traverse the list, while *pTemp2
 *           is usually used to do some temporary things.
 *
-*   @note : nUsable is just nNodes - 1. It's given to the user so
+* @note : nUsable is just nNodes - 1. It's given to the user so
 *           the user can loop and such.
 *
-*   @note : privAlloc()'s allocated nodes start from startSlot.
+* @note : privAlloc()'s allocated nodes start from startSlot.
 *
-*   @note : privDealloc() deallocates the specified nodes and all
+* @note : privDealloc() deallocates the specified nodes and all
 *           nodes in between.
 *
-*   @note : privAlloc() returns the last node allocated, or if
+* @note : privAlloc() returns the last node allocated, or if
 *           no nodes were allocated, will return &[startSlot - 1]
 *
-*   @todo : Have tempSlot at the slot-1, most functions will
+* @todo : Have tempSlot at the slot-1, most functions will
 *	    need slot-1, currently they have to re-traverse.
 *
+* @todo : Remove pTempN from class, initialize seperately.
+*
+* @todo : Change to *data, make function allocate in chunks.
 \****************************************************************/
 
 #define TRAVERSE(slot) if (tempSlot > slot) {pTemp1 = start; tempSlot = 0;} for (; tempSlot < slot; tempSlot++) pTemp1 = pTemp1->next;
@@ -37,17 +39,18 @@ class llist
             type data;
         };
 
-        // The setinel node! This specialization is because the data might take a lot of space, or may have static stuff.
+        // The setinel node! This specialization is because the data member might not be worth having.
         struct setinelNode
             { node *next; };
 
-        node *start, *pTemp1, *pTemp2;
-        uint64_t nNodes, nUsable, tempSlot;
+	node *start, *pTemp1, *pTemp2;
+        //node *start, *current;
+	uint64_t nNodes, nUsable, tempSlot;
 
         // Allocation and deallocation
         node* privAlloc( uint64_t startSlot, uint64_t newNodes )
         {
-            // Incase the user wants to allocate starting from somewhere not yet allocated.
+            // Incase the user wants to allocate starting from somewhere not yet allocated, allocate nodes upto startSlot.
             if ( startSlot > nNodes )
                 { newNodes += (startSlot - nNodes); startSlot = nNodes; }
 

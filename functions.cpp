@@ -49,30 +49,30 @@ bool compare( char* str1, char* str2 )
 /*************************************************************\
 * @brief : Finds a particular string within a string.
 *
-* @param - char *string : The string where tofind is being
-*                         searched.
-* @param - char *tofind : The string which the function is
-*                         looking for.
+* @param - char *string : Where to search (set, haystack)
+* @param - char *subString : What to search (subset, needle)
 *
 * @return - uint16_t : The slot after the found string, if not
-*                      found, will return 0xFFFF.
+*                      found, will return ~0 (0xFFFF).
 *
 * @note : The function can be made to find the slot where the
 *         tofind starts, by changing the return from
 *         (slot + findSlot) to just (slot).
 *
-* @fixme (Nahiyan#5#): Doesn't work when string == tofind
+* @fixme : Doesn't work when string == tofind
+* @fixme : Need to optimise (e.g. scan string for the first
+*          letter of subString.
 \*************************************************************/
-uint16_t find( char *string, char *tofind )
+uint16_t find( const char *string, const char *subString )
 {
-    uint16_t slot = 0, findSlot;
+    uint16_t slot = 0, subSlot;
 
     while ( *string != '\0' )
     {
-        for ( findSlot = 0; string[findSlot] == tofind[findSlot]; findSlot++ );
+        for ( subSlot = 0; string[subSlot] == subString[subSlot]; subSlot++ );
 
-        if ( tofind[findSlot] == '\0' )
-            return slot + findSlot;
+        if ( subString[subSlot] == '\0' )
+            return slot + subSlot;
 
         string++; slot++;
     }
@@ -81,7 +81,8 @@ uint16_t find( char *string, char *tofind )
 }
 
 /*************************************************************\
-* @brief : Gets a parameter/option from a string.
+* @brief : Gets a parameter/option from a string. Useful for
+*          the win32 main(). Otherwise, not useful in *nix.
 \*************************************************************/
 bool getStrParam( char *param, char *output )
 {
@@ -103,7 +104,7 @@ bool getStrParam( char *param, char *output )
 
 /*************************************************************\
 * @brief : Gets the square-root of a given number n.
-* @fixme : May be stuck in an infinite loop.
+* @fixme : May get stuck in an infinite loop.
 \*************************************************************/
 long double root( uint64_t n )
 {
