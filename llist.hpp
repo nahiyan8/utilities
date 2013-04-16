@@ -4,7 +4,7 @@
 /****************************************************************\
 * @note : A sentinel node is used, which uses a special struct.
 *
-* @note : *pTemp1 is used to traverse the list, while *pTemp2
+* @note : *pNode1 is used to traverse the list, while *pNode2
 *           is usually used to do some temporary things.
 *
 * @note : nUsable is just nNodes - 1. It's given to the user so
@@ -26,7 +26,7 @@
 * @todo : Change to *data, make function allocate in chunks.
 \****************************************************************/
 
-#define TRAVERSE(slot) if (tempSlot > slot) {pTemp1 = start; tempSlot = 0;} for (; tempSlot < slot; tempSlot++) pTemp1 = pTemp1->next;
+#define TRAVERSE(slot) if (tempSlot > slot) {pNode1 = start; tempSlot = 0;} for (; tempSlot < slot; tempSlot++) pNode1 = pNode1->next;
 
 template <class type>
 class llist
@@ -39,13 +39,13 @@ class llist
             type data;
         };
 
-        // The setinel node! This specialization is because the data member might not be worth having.
-        struct setinelNode
-            { node *next; };
+	// The setinel node! Because we don't need data here, nor will be able to use it.
+	struct setinelNode
+		{ node *next; };
 
-	node *start, *pTemp1, *pTemp2;
-        //node *start, *current;
-	uint64_t nNodes, nUsable, tempSlot;
+	node *start, *pNode1, *pNode2;
+	//node *start, *current, *temp;
+	uint64_t nNodes, nUsable, currentSlot;
 
         // Allocation and deallocation
         node* privAlloc( uint64_t startSlot, uint64_t newNodes )
@@ -57,38 +57,44 @@ class llist
             // Decremented because we want to go to the specified node's previous one.
             startSlot--;
 
-            // If tempSlot < startSlot, it must be >= start, so traverse from temp. If tempSlot > startSlot, traverse from start;
+            // If tempSlot < startSlot, it must be >= start, so traverse from pointer. If tempSlot > startSlot, traverse from start;
             if ( tempSlot > startSlot )
-                { pTemp1 = start; tempSlot = 0; }
+                { pNode1 = start; tempSlot = 0; }
 
             // Traverse!! (There's a macro declared as TRAVERSE(slot) that does this and the previous if, since traversion is done a lot.)
             for ( ; tempSlot < startSlot; tempSlot++ )
-                pTemp1 = pTemp1->next;
+                pNode1 = pNode1->next;
 
-            // To link the newly made nodes to the rest of the list later.
-            pTemp2 = pTemp1->next;
+            // To reconnect the newly made nodes to the rest of the list later.
+            pNode2 = pNode1->next;
 
-            // Allocate
+            // Allocate, move to newly allocated node, change relevant integers.
             while ( newNodes-- != 0 )
-            {
-                try
-                    { pTemp1->next = new node; }
-                catch ( ... )
-                    { pTemp1->next = pTemp2; nUsable = nNodes; nUsable--; return false; }
+	    {
+		// Allocate a new node, while being wary of exceptions.
+		try 
+			{ pNode1->next = new node; }
+		
+		// Exception caught, could not allocate another node. Reconnect the list, update list size and return false.
+		catch ( ... )
+		
+			{ pNode1->next = pNode2; nUsable = nNodes - 1; return false; }
 
-                pTemp1 = pTemp1->next;
-
+		// Change to the newly allocated node.
+                pNode1 = pNode1->next;
+		
+		// Update relevant integers.
                 tempSlot++;
                 nNodes++;
             }
 
             // Reconnect the list..
-            pTemp1->next = pTemp2;
+            pNode1->next = pNode2;
 
             // For user needs. :)
             nUsable = nNodes; nUsable--;
 
-            return pTemp1;
+            return pNode1;
         };
 
         void privDealloc( uint64_t from, uint64_t to )
@@ -108,9 +114,9 @@ class llist
             // They come, and be de-allo-cated, and be banished, like anni-hil-ated.
             while ( tempSlot < to )
             {
-                pTemp2 = pTemp1->next;
-                pTemp1->next = pTemp1->next->next;
-                delete pTemp2;
+                pNode2 = pNode1->next;
+                pNode1->next = pNode1->next->next;
+                delete pNode2;
 
                 tempSlot++;
                 nNodes--;
@@ -125,13 +131,13 @@ class llist
         // Constructors are constructing some constructs, in that construction op.
         llist()
         {
-            start = reinterpret_cast <node*> (new setinelNode); pTemp1 = start; start->next = 0;
+            start = reinterpret_cast <node*> (new setinelNode); pNode1 = start; start->next = 0;
             nNodes = 1; nUsable = 0; tempSlot = 0;
         };
 
         llist( uint32_t newNodes )
         {
-            start = reinterpret_cast <node*> (new setinelNode); pTemp1 = start; start->next = 0;
+            start = reinterpret_cast <node*> (new setinelNode); pNode1 = start; start->next = 0;
             nNodes = 1; nUsable = 0; tempSlot = 0;
 
             privAlloc( 1, newNodes );
@@ -156,26 +162,26 @@ class llist
 
             // Re-use, optimizo!
             if ( tempSlot == slot )
-                { return pTemp1->data; }
+                { return pNode1->data; }
 
             TRAVERSE( slot );
-            return pTemp1->data;
+            return pNode1->data;
         };
 
         /* COPY DEM DATAS - You're right! <reply> You're left! TODO: *this
         llist <type> & operator=( llist <type> &from )
         {
-            pTemp1 = start->next; pTemp2 = from.start->next;
+            pNode1 = start->next; pNode2 = from.start->next;
             tempSlot = 1;
 
             for ( ; tempSlot < from.nNodes; tempSlot++ )
             {
                 // Not allocated, so allocate!
                 if ( tempSlot == nNodes )
-                    { pTemp1->next = new node; nNodes++; }
+                    { pNode1->next = new node; nNodes++; }
 
                 // JUMP FOOOOR IIIIT!!
-                pTemp1 = pTemp1->next;
+                pNode1 = pNode1->next;
 
 
             }
@@ -200,16 +206,16 @@ class llist
 
             // Traverse to nodeA..
             TRAVERSE( nodeA );
-            pTemp2 = pTemp1;
+            pNode2 = pNode1;
 
-            // Now to nodeB.. TRAVERSE() wasn't used because it checks if the node we're traveling to is lower than pTemp1, which was already done.
+            // Now to nodeB.. TRAVERSE() wasn't used because it checks if the node we're traveling to is lower than pNode1, which was already done. </optimised>
             for ( ; tempSlot < nodeB; tempSlot++ )
-                pTemp1 = pTemp1->next;
+                pNode1 = pNode1->next;
 
             // SWAP THEM THINGIES!!
-            node *swapper = pTemp1->next;
-            pTemp1->next = pTemp2->next;
-            pTemp2->next = swapper;
+            node *swapper = pNode1->next;
+            pNode1->next = pNode2->next;
+            pNode2->next = swapper;
         }
 
         // Miscellany
