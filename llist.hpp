@@ -4,7 +4,7 @@
 /****************************************************************\
 * @note : A sentinel node is used, which uses a special struct.
 *
-* @note : *pNode1 is used to traverse the list, while *pNode2
+* @note : *current is used to traverse the list, while *temp
 *           is usually used to do some temporary things.
 *
 * @note : nUsable is just nNodes - 1. It's given to the user so
@@ -18,7 +18,7 @@
 * @note : privAlloc() returns the last node allocated, or if
 *           no nodes were allocated, will return &[startSlot - 1]
 *
-* @todo : Have tempSlot at the slot-1, most functions will
+* @todo : Have currentSlot at the slot-1, most functions will
 *	    need slot-1, currently they have to re-traverse.
 *
 * @todo : Remove pTempN from class, initialize seperately.
@@ -26,7 +26,7 @@
 * @todo : Change to *data, make function allocate in chunks.
 \****************************************************************/
 
-#define TRAVERSE(slot) if (tempSlot > slot) {pNode1 = start; tempSlot = 0;} for (; tempSlot < slot; tempSlot++) pNode1 = pNode1->next;
+#define TRAVERSE(slot) if (currentSlot > slot) {current = start; currentSlot = 0;} for (; currentSlot < slot; currentSlot++) current = current->next;
 
 template <class type>
 class llist
@@ -43,7 +43,7 @@ class llist
 	struct setinelNode
 		{ node *next; };
 
-	node *start, *pNode1, *pNode2;
+	node *start, *current, *temp;
 	//node *start, *current, *temp;
 	uint64_t nNodes, nUsable, currentSlot;
 
@@ -57,44 +57,44 @@ class llist
             // Decremented because we want to go to the specified node's previous one.
             startSlot--;
 
-            // If tempSlot < startSlot, it must be >= start, so traverse from pointer. If tempSlot > startSlot, traverse from start;
-            if ( tempSlot > startSlot )
-                { pNode1 = start; tempSlot = 0; }
+            // If currentSlot < startSlot, it must be >= start, so traverse from pointer. If currentSlot > startSlot, traverse from start;
+            if ( currentSlot > startSlot )
+                { current = start; currentSlot = 0; }
 
             // Traverse!! (There's a macro declared as TRAVERSE(slot) that does this and the previous if, since traversion is done a lot.)
-            for ( ; tempSlot < startSlot; tempSlot++ )
-                pNode1 = pNode1->next;
+            for ( ; currentSlot < startSlot; currentSlot++ )
+                current = current->next;
 
             // To reconnect the newly made nodes to the rest of the list later.
-            pNode2 = pNode1->next;
+            temp = current->next;
 
             // Allocate, move to newly allocated node, change relevant integers.
             while ( newNodes-- != 0 )
 	    {
 		// Allocate a new node, while being wary of exceptions.
 		try 
-			{ pNode1->next = new node; }
+			{ current->next = new node; }
 		
 		// Exception caught, could not allocate another node. Reconnect the list, update list size and return false.
 		catch ( ... )
 		
-			{ pNode1->next = pNode2; nUsable = nNodes - 1; return false; }
+			{ current->next = temp; nUsable = nNodes - 1; return false; }
 
 		// Change to the newly allocated node.
-                pNode1 = pNode1->next;
+                current = current->next;
 		
 		// Update relevant integers.
-                tempSlot++;
+                currentSlot++;
                 nNodes++;
             }
 
             // Reconnect the list..
-            pNode1->next = pNode2;
+            current->next = temp;
 
             // For user needs. :)
             nUsable = nNodes; nUsable--;
 
-            return pNode1;
+            return current;
         };
 
         void privDealloc( uint64_t from, uint64_t to )
@@ -103,7 +103,7 @@ class llist
             if ( from >= nNodes || to >= nNodes )
                 return;
 
-            // to should be > from, if not, then swap!
+            // Should be (to > from), if not, swap!
             if ( to < from )
                 { uint64_t swap = to; to = from; from = swap; }
 
@@ -112,18 +112,18 @@ class llist
             TRAVERSE( from );
 
             // They come, and be de-allo-cated, and be banished, like anni-hil-ated.
-            while ( tempSlot < to )
+            while ( currentSlot < to )
             {
-                pNode2 = pNode1->next;
-                pNode1->next = pNode1->next->next;
-                delete pNode2;
+                temp = current->next;
+                current->next = current->next->next;
+                delete temp;
 
-                tempSlot++;
+                currentSlot++;
                 nNodes--;
             }
 
-            // We sorta used tempSlot a way not meant for it. Fixing it..
-            tempSlot = from;
+            // We sorta used currentSlot a way not meant for it. Fixing it..
+            currentSlot = from;
             nUsable = nNodes; nUsable--;
         };
 
@@ -131,14 +131,14 @@ class llist
         // Constructors are constructing some constructs, in that construction op.
         llist()
         {
-            start = reinterpret_cast <node*> (new setinelNode); pNode1 = start; start->next = 0;
-            nNodes = 1; nUsable = 0; tempSlot = 0;
+            start = reinterpret_cast <node*> (new setinelNode); current = start; start->next = 0;
+            nNodes = 1; nUsable = 0; currentSlot = 0;
         };
 
         llist( uint32_t newNodes )
         {
-            start = reinterpret_cast <node*> (new setinelNode); pNode1 = start; start->next = 0;
-            nNodes = 1; nUsable = 0; tempSlot = 0;
+            start = reinterpret_cast <node*> (new setinelNode); current = start; start->next = 0;
+            nNodes = 1; nUsable = 0; currentSlot = 0;
 
             privAlloc( 1, newNodes );
         };
@@ -161,27 +161,27 @@ class llist
             slot++;
 
             // Re-use, optimizo!
-            if ( tempSlot == slot )
-                { return pNode1->data; }
+            if ( currentSlot == slot )
+                { return current->data; }
 
             TRAVERSE( slot );
-            return pNode1->data;
+            return current->data;
         };
 
         /* COPY DEM DATAS - You're right! <reply> You're left! TODO: *this
         llist <type> & operator=( llist <type> &from )
         {
-            pNode1 = start->next; pNode2 = from.start->next;
-            tempSlot = 1;
+            current = start->next; temp = from.start->next;
+            currentSlot = 1;
 
-            for ( ; tempSlot < from.nNodes; tempSlot++ )
+            for ( ; currentSlot < from.nNodes; currentSlot++ )
             {
                 // Not allocated, so allocate!
-                if ( tempSlot == nNodes )
-                    { pNode1->next = new node; nNodes++; }
+                if ( currentSlot == nNodes )
+                    { current->next = new node; nNodes++; }
 
                 // JUMP FOOOOR IIIIT!!
-                pNode1 = pNode1->next;
+                current = current->next;
 
 
             }
@@ -206,16 +206,16 @@ class llist
 
             // Traverse to nodeA..
             TRAVERSE( nodeA );
-            pNode2 = pNode1;
+            temp = current;
 
-            // Now to nodeB.. TRAVERSE() wasn't used because it checks if the node we're traveling to is lower than pNode1, which was already done. </optimised>
-            for ( ; tempSlot < nodeB; tempSlot++ )
-                pNode1 = pNode1->next;
+            // Now to nodeB.. TRAVERSE() wasn't used because it checks if the node we're traveling to is lower than current, which was already done. </optimised>
+            for ( ; currentSlot < nodeB; currentSlot++ )
+                current = current->next;
 
             // SWAP THEM THINGIES!!
-            node *swapper = pNode1->next;
-            pNode1->next = pNode2->next;
-            pNode2->next = swapper;
+            node *swapper = current->next;
+            current->next = temp->next;
+            temp->next = swapper;
         }
 
         // Miscellany
