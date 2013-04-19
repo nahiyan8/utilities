@@ -39,13 +39,13 @@ class llist
             type data;
         };
 
-	// The setinel node! Because we don't need data here, nor will be able to use it.
-	struct setinelNode
-		{ node *next; };
+		// The setinel node! Because we don't need data here, nor will be able to use it.
+		struct setinelNode
+			{ node *next; };
 
-	node *start, *current, *temp;
-	//node *start, *current, *temp;
-	uint64_t nNodes, nUsable, currentSlot;
+		node *start, *current, *temp;
+		//node *start, *current, *temp;
+		uint64_t nNodes, nUsable, currentSlot;
 
         // Allocation and deallocation
         node* privAlloc( uint64_t startSlot, uint64_t newNodes )
@@ -69,21 +69,19 @@ class llist
             temp = current->next;
 
             // Allocate, move to newly allocated node, change relevant integers.
-            while ( newNodes-- != 0 )
-	    {
-		// Allocate a new node, while being wary of exceptions.
-		try 
-			{ current->next = new node; }
-		
-		// Exception caught, could not allocate another node. Reconnect the list, update list size and return false.
-		catch ( ... )
-		
-			{ current->next = temp; nUsable = nNodes - 1; return false; }
+            while ( newNodes-- ) // != 0
+			{
+				// Allocate a new node, while being wary of exceptions.
+				try 
+					{ current->next = new node; }
+				// Exception caught, could not allocate another node. Reconnect the list, update list size and return false.
+				catch ( ... )
+					{ current->next = temp; nUsable = nNodes - 1; return false; }
 
-		// Change to the newly allocated node.
+				// Change to the newly allocated node.
                 current = current->next;
 		
-		// Update relevant integers.
+				// Update relevant integers.
                 currentSlot++;
                 nNodes++;
             }
@@ -91,15 +89,14 @@ class llist
             // Reconnect the list..
             current->next = temp;
 
-            // For user needs. :)
-            nUsable = nNodes; nUsable--;
+            nUsable = nNodes - 1;
 
             return current;
         };
 
         void privDealloc( uint64_t from, uint64_t to )
         {
-            // Check if user wants to deallocate the far lands.
+            // One does not simply deallocate the farlands.
             if ( from >= nNodes || to >= nNodes )
                 return;
 
@@ -147,7 +144,7 @@ class llist
         ~llist()
             { privDealloc(1, nUsable); delete ((setinelNode*) start); };
 
-        // Allocation and deallocation candy wrappers! (to prevent setinel node access/modification.)
+        // Allocation and deallocation candy wrappers! (to prevent setinel node access)
         inline type& alloc( uint64_t startSlot, uint64_t newNodes )
             { startSlot++; return (privAlloc(startSlot, newNodes))->data; };
 
@@ -228,7 +225,11 @@ class llist
         inline uint64_t size()
             { return nUsable; };
 
-        type* operator->()
+		// Upcoming!
+//		inline uint64_t truesize()
+//			{ return nNodes; };
+
+		type* operator->()
             { return &(start->next->data); }
 };
 
