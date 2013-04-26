@@ -45,10 +45,10 @@ class llist
 
 		node *start, *current, *temp;
 		//node *start, *current, *temp;
-		uint64_t nNodes, nUsable, currentSlot;
+		unsigned int nNodes, nUsable, currentSlot;
 
         // Allocation and deallocation
-        node* privAlloc( uint64_t startSlot, uint64_t newNodes )
+        node* privAlloc( unsigned int startSlot, unsigned int newNodes )
         {
             // Incase the user wants to allocate starting from somewhere not yet allocated, allocate nodes upto startSlot.
             if ( startSlot > nNodes )
@@ -75,6 +75,7 @@ class llist
 				try 
 					{ current->next = new node; }
 				// Exception caught, could not allocate another node. Reconnect the list, update list size and return false.
+				// @fixme: the return type is node*, don't return false. Choose another, wisely this time, check for good ideas.. or maybe fail..
 				catch ( ... )
 					{ current->next = temp; nUsable = nNodes - 1; return false; }
 
@@ -94,7 +95,7 @@ class llist
             return current;
         };
 
-        void privDealloc( uint64_t from, uint64_t to )
+        void privDealloc( unsigned int from, unsigned int to )
         {
             // One does not simply deallocate the farlands.
             if ( from >= nNodes || to >= nNodes )
@@ -102,7 +103,7 @@ class llist
 
             // Should be (to > from), if not, swap!
             if ( to < from )
-                { uint64_t swap = to; to = from; from = swap; }
+                { unsigned int swap = to; to = from; from = swap; }
 
             // TRAVERSAL! (We want to deallocate from behind)
             from--; to--;
@@ -132,7 +133,7 @@ class llist
             nNodes = 1; nUsable = 0; currentSlot = 0;
         };
 
-        llist( uint32_t newNodes )
+        llist( unsigned int newNodes )
         {
             start = reinterpret_cast <node*> (new setinelNode); current = start; start->next = 0;
             nNodes = 1; nUsable = 0; currentSlot = 0;
@@ -145,14 +146,14 @@ class llist
             { privDealloc(1, nUsable); delete ((setinelNode*) start); };
 
         // Allocation and deallocation candy wrappers! (to prevent setinel node access)
-        inline type& alloc( uint64_t startSlot, uint64_t newNodes )
+        inline type& alloc( unsigned int startSlot, unsigned int newNodes )
             { startSlot++; return (privAlloc(startSlot, newNodes))->data; };
 
-        inline void dealloc( uint64_t from, uint64_t to )
+        inline void dealloc( unsigned int from, unsigned int to )
             { from++; to++; privDealloc(from, to); };
 
         // Access
-        type& operator[]( uint64_t slot )
+        type& operator[]( unsigned int slot )
         {
             // For le setinel node
             slot++;
@@ -186,7 +187,7 @@ class llist
         */
 
         // I really think you should swap yourself.
-        void swap( uint64_t nodeA, uint64_t nodeB )
+        void swap( unsigned int nodeA, unsigned int nodeB )
         {
             // I don't think we have that..
             if ( nodeA >= nUsable || nodeB >= nUsable )
@@ -194,7 +195,7 @@ class llist
 
             // We want to go to the lower one first (nodeA).. NONSENSE!! And return if A == B because.. I think it's self-explanatory :)
             if ( nodeB > nodeA )
-                { uint64_t transfer = nodeA; nodeA = nodeB; nodeB = transfer; }
+                { unsigned int transfer = nodeA; nodeA = nodeB; nodeB = transfer; }
             else
                 if ( nodeA == nodeB )
                     return;
@@ -216,17 +217,17 @@ class llist
         }
 
         // Miscellany
-        inline type& alloc( uint64_t newNodes )
+        inline type& alloc( unsigned int newNodes )
             { return (privAlloc(nNodes, newNodes))->data; };
 
-        inline void dealloc( uint64_t slot )
+        inline void dealloc( unsigned int slot )
             { slot++; privDealloc(slot, slot); };
 
-        inline uint64_t size()
+        inline unsigned int size()
             { return nUsable; };
 
 		// Upcoming!
-//		inline uint64_t truesize()
+//		inline unsigned int truesize()
 //			{ return nNodes; };
 
 		type* operator->()
